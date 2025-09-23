@@ -281,6 +281,7 @@ function toggleScreensaver() {
         privacyOverlay.style.display = 'none';
         controlsPanel.style.opacity = 0; // Hide the panel
         controlsPanel.style.pointerEvents = 'none'; // Make it unclickable
+        document.documentElement.requestFullscreen();
         startScreensaver();
     } else {
         isPaused = true;
@@ -289,6 +290,9 @@ function toggleScreensaver() {
         startStopButton.textContent = 'Start';
         controlsPanel.style.opacity = 1; // Show the panel
         controlsPanel.style.pointerEvents = 'auto'; // Make it clickable
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
     }
 }
 async function renderGallery() {
