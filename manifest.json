@@ -1,9 +1,9 @@
 {
-  "name": "My Screensaver PWA",
-  "short_name": "Screensaver",
-  "description": "A beautiful photo screensaver for your device.",
+  "name": "Mscreen PWA",
+  "short_name": "Mscreen",
+  "description": "A beautiful customisable photo screensaver application for your device.",
   "start_url": "./",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#000000",
   "theme_color": "#000000",
   "icons": [
