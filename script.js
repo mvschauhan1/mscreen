@@ -278,10 +278,23 @@ function showNextImageWithUrl(url) {
 
 function toggleScreensaver() {
     if (isPaused) {
+        // ✅ MOVE THE FULLSCREEN REQUEST TO THE TOP
+        const element = document.documentElement;
+        if (element.requestFullscreen) {
+            element.requestFullscreen();
+        } else if (element.mozRequestFullScreen) { /* Firefox */
+            element.mozRequestFullScreen();
+        } else if (element.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+            element.webkitRequestFullscreen();
+        } else if (element.msRequestFullscreen) { /* IE/Edge */
+            element.msRequestFullscreen();
+        }
+        
+        // Now, proceed with the rest of the UI changes
         privacyOverlay.style.display = 'none';
         controlsPanel.style.opacity = 0; // Hide the panel
         controlsPanel.style.pointerEvents = 'none'; // Make it unclickable
-        document.documentElement.requestFullscreen();
+        
         startScreensaver();
     } else {
         isPaused = true;
@@ -290,11 +303,20 @@ function toggleScreensaver() {
         startStopButton.textContent = 'Start';
         controlsPanel.style.opacity = 1; // Show the panel
         controlsPanel.style.pointerEvents = 'auto'; // Make it clickable
+        
+        // Exit full-screen
         if (document.exitFullscreen) {
-          document.exitFullscreen();
+            document.exitFullscreen();
+        } else if (document.mozCancelFullScreen) { /* Firefox */
+            document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) { /* Chrome, Safari and Opera */
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { /* IE/Edge */
+            document.msExitFullscreen();
         }
     }
 }
+
 async function renderGallery() {
     photoGallery.innerHTML = '';
     const userPhotos = await getImagesFromDB();
