@@ -197,10 +197,12 @@ function showNextImage() {
     
     const imageUrl = images[currentIndex].url;
     
+    // Create the image element first
     const newImage = new Image();
     newImage.src = imageUrl;
-    newImage.classList.add('active');
-
+    newImage.alt = "Screensaver Image";
+    
+    // Apply special effects directly to the image
     if (isBlackAndWhite) {
         newImage.classList.add('black-and-white');
     }
@@ -211,8 +213,22 @@ function showNextImage() {
     } else if (effect < 0.66) {
         newImage.classList.add('zoom-out-animation');
     }
+
+    let finalElement;
+    if (polaroidToggle.checked) {
+        // Wrap the image in a div for the polaroid effect
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('polaroid');
+        wrapper.appendChild(newImage);
+        finalElement = wrapper;
+    } else {
+        finalElement = newImage;
+    }
     
-    imageContainer.appendChild(newImage);
+    // Add the active class to the final element being appended
+    finalElement.classList.add('active');
+
+    imageContainer.appendChild(finalElement);
 
     currentIndex = (currentIndex + 1) % images.length;
     
@@ -401,12 +417,8 @@ window.addEventListener('devicemotion', (event) => {
     }
 });
 
-document.addEventListener('mousemove', (event) => {
-    if (!isPaused) {
-        toggleScreensaver();
-    }
-});
-
+// For desktop, the screensaver will now only exit on a deliberate click.
+// The too-sensitive mousemove listener has been removed.
 document.addEventListener('click', (event) => {
     if (event.detail === 1) {
         if (controlsPanel.contains(event.target) || galleryOverlay.contains(event.target) || overlay.contains(event.target)) return;
