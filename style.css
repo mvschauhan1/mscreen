@@ -7,7 +7,7 @@ body, html {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    font-family: 'Segoe UI', Arial, sans-serif;
+    font-family: 'Inter', sans-serif;
     background-color: #000;
     height: 100vh;
     width: 100vw;
@@ -65,131 +65,223 @@ body, html {
     animation: slow-zoom-out 20s linear forwards;
 }
 
-/* --- UI Elements --- */
-
-/* Privacy Overlay */
-#privacy-overlay {
+/* --- NEW: Meditation Text Animation --- */
+#meditation-text {
     position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(3rem, 10vw, 8rem);
+    font-family: 'Bebas Neue', sans-serif;
+    color: white;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    display: none;
+    z-index: 10;
+}
+
+@keyframes breathing-animation {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+/* --- UI Elements - PROFESSIONAL REFRESH --- */
+
+/* New overlay for the semi-transparent background */
+#overlay {
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.7);
     z-index: 10;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    transition: opacity 0.3s ease-in-out;
 }
 
 /* Control Panel */
 #controls-panel {
     background: rgba(18, 18, 18, 0.85);
     backdrop-filter: blur(10px);
-    padding: clamp(1rem, 2vw, 1.5rem);
+    padding: clamp(1rem, 2vw, 2rem);
     border-radius: 12px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 15px;
+    gap: 20px;
     z-index: 20;
     color: #f0f0f0;
     transition: opacity 0.3s ease-in-out;
-    max-width: 90vw;
+    max-width: clamp(300px, 50vw, 450px);
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    
+    /* NEW: Centering with position fixed for reliability */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
-.control-group {
+.controls-section {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    white-space: nowrap;
+    gap: 15px;
     width: 100%;
 }
 
+.controls-section h3 {
+    margin: 0;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: #a0a0a0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+}
+        
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+/* New horizontal layout for specific control groups */
+.horizontal-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.horizontal-group .control-group {
+    flex: 1 1 45%; /* Sizing for horizontal layout with wrapping */
+}
+
 #controls-panel label {
-    font-size: clamp(0.7rem, 1.5vw, 0.8rem);
+    font-size: clamp(0.75rem, 1.5vw, 0.9rem);
     color: #b0b0b0;
+    flex-shrink: 0;
 }
 
 #controls-panel select,
 #controls-panel input,
 #controls-panel button {
-    background-color: #333;
-    border: 1px solid #555;
-    color: white;
-    padding: 8px 12px;
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    color: #f0f0f0;
+    padding: 12px 16px;
     border-radius: 8px;
-    font-size: clamp(0.8rem, 1.75vw, 0.9rem);
+    font-size: clamp(0.8rem, 1.75vw, 1rem);
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    width: 100%;
+    width: auto; /* Let the container handle sizing */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 #controls-panel select:hover,
 #controls-panel input:hover,
 #controls-panel button:hover {
-    background-color: #444;
+    background-color: #3b3b3b;
+    box-shadow: 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 #controls-panel select:focus,
 #controls-panel input:focus,
 #controls-panel button:focus {
     outline: none;
-    border-color: #292d31;
+    border-color: #555;
+    box-shadow: 0 0 0 2px #4a90e2; /* Blue focus ring */
 }
 
-/* Button Group */
-.button-group {
+/* Action Buttons Section */
+.action-buttons {
     display: flex;
+    flex-direction: column;
     gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-    width: 100%;
-    justify-content: center;
 }
 
-/* Start/Stop Button - Consolidated Rule */
+/* Tightly group the main start/stop buttons */
+.main-toggles {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+/* Tightly group the photo action buttons */
+.photo-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+        
+#upload-button, #view-photos-button, #clear-photos-button {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Start/Stop Button */
 #start-stop-button {
     font-weight: bold;
     font-size: clamp(1rem, 2vw, 1.2rem);
-    padding: 12px 24px;
-    background-color: #2ECC71; /* A vibrant, eye-catching green */
+    background-color: #4a90e2; 
     border: none;
-    transition: background-color 0.2s ease, transform 0.2s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    width: 100%;
+    color: white;
+    grid-column: span 2;
 }
 
 #start-stop-button:hover {
-    background-color: #27AE60;
+    background-color: #3a7bd5;
     transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+#meditation-toggle-button {
+    background-color: #388e3c;
+    color: white;
+}
+#meditation-toggle-button.active {
+    background-color: #d32f2f;
+}
+
+#color-toggle {
+    background-color: #7b1fa2;
 }
 
 /* App Title: place it inside the controls panel above the buttons */
 #app-title {
-    position: relative; /* flow with the controls panel */
     width: 100%;
-    margin: 0 0 0.5rem 0;
+    margin-bottom: 1.5rem;
     color: white;
     text-align: center;
     pointer-events: none;
     user-select: none;
-    z-index: 2;
 }
 
 #app-title h1 {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(1.25rem, 4vw, 3rem);
+    font-size: clamp(2.5rem, 5vw, 4rem); /* Increased prominence */
     font-weight: 700;
     margin: 0;
     text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
 }
 
-/* Hide the title when the screensaver is playing */
-.playing #app-title {
+/* Hide the title and overlay when the screensaver is playing */
+.playing #app-title,
+.playing #controls-panel,
+.playing #overlay {
     display: none;
+}
+
+/* Make Clear Photos button span both columns to center it */
+#clear-photos-button {
+    grid-column: span 2;
 }
 
 /* --- Gallery Overlay --- */
@@ -234,61 +326,112 @@ body, html {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 15px;
+    gap: 25px;
     width: 90%;
     max-width: 800px;
     overflow-y: auto;
     padding-bottom: 50px;
 }
 
+/* FIX: Gallery photos no longer look distorted.
+   They now maintain their aspect ratio with a max size. */
 .gallery-item {
     position: relative;
-    width: 100px;
-    height: 100px;
-    overflow: hidden;
+    padding: 10px;
     border-radius: 5px;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    width: auto;
+    height: auto;
+    max-width: 150px;
+    max-height: 180px;
 }
 
 .gallery-item img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 2px;
+}
+
+/* NEW: The polaroid class is now applied to the main screensaver image. */
+.polaroid {
+    position: relative;
+    background-color: white;
+    padding: 1rem 1rem 4rem 1rem; /* Creates the bottom border */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transform: rotate(2deg); 
+    transition: transform 0.5s ease-in-out, box-shadow 0.5s ease-in-out, padding 0.5s ease;
+}
+
+.polaroid:nth-child(even) {
+    transform: rotate(-2deg); 
+}
+
+/* The image itself inside the polaroid container. */
+.polaroid img {
+    object-fit: contain;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    border-radius: 2px;
+}
+
+.gallery-item:hover {
+    transform: translateY(-5px) rotate(2deg);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
 }
 
 .delete-button {
     position: absolute;
-    top: 5px;
-    right: 5px;
-    background: rgba(255, 0, 0, 0.7);
+    top: -8px;
+    right: -8px;
+    background: #d32f2f;
     color: white;
     border: none;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    font-size: 12px;
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 /* --- Media Query for smaller screens --- */
+@media (min-width: 769px) {
+    .responsive-control-row {
+        display: flex;
+        gap: 15px;
+        justify-content: space-between;
+        align-items: flex-end;
+    }
+
+    .responsive-control-row .control-group {
+        flex: 1;
+    }
+}
 @media (max-width: 768px) {
     #controls-panel {
-        gap: 10px;
-        align-items: stretch;
-        padding: 10px;
+        gap: 15px;
+        padding: 15px;
+        width: 90vw;
     }
-
-    .control-group {
-        flex-direction: row;
-        align-items: center;
+    .controls-section {
         gap: 10px;
     }
-
     .button-group {
+        grid-template-columns: 1fr;
+    }
+    .gallery-item {
+        max-width: 100px;
+        max-height: 120px;
+    }
+    
+    .horizontal-group {
         flex-direction: column;
-        align-items: stretch;
+        gap: 10px;
     }
 }
