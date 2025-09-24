@@ -22,10 +22,13 @@ const photoGallery = document.getElementById('photo-gallery');
 let images = []; // We will now make sure this array is consistent
 let currentIndex = 0;
 let timerId;
+let gapTimerId = null;
 let isBlackAndWhite = false;
 let isPaused = true; // Set to true to start in a paused state
 let cachedImages = []; // This is now a temporary variable for managing data
 const cacheSize = 25;
+let runCounter = 0;
+let currentRunId = 0;
 
 let db;
 const DB_NAME = 'screensaver_db';
@@ -157,12 +160,21 @@ function startScreensaver() {
         return;
     }
     isPaused = false;
+    // mark a new run to invalidate previous async actions
+    currentRunId = ++runCounter;
     showNextImage();
 }
 
 function showNextImage() {
     if (isPaused) return;
-    clearTimeout(timerId);
+    if (timerId) {
+        clearTimeout(timerId);
+        timerId = null;
+    }
+    if (gapTimerId) {
+        clearTimeout(gapTimerId);
+        gapTimerId = null;
+    }
 
     const oldImage = imageContainer.querySelector('.active');
     if (oldImage) {
@@ -222,35 +234,53 @@ function showNextImage() {
         gapTime = parseInt(manualIntervalInput.value) * 1000;
     }
 
+    // If user paused while we were preparing the next image, bail out now
+    if (isPaused) return;
+
     timerId = setTimeout(() => {
         imageContainer.style.opacity = 0;
-        setTimeout(() => {
+        // store inner gap timer so we can cancel it when stopping
+        gapTimerId = setTimeout(() => {
             imageContainer.style.opacity = 1;
-            showNextImage();
+            gapTimerId = null;
+            if (!isPaused) showNextImage();
         }, gapTime);
+        timerId = null;
     }, photoDisplayTime);
 }
 
 // And in fetchNewImageAndDisplay as well
 async function fetchNewImageAndDisplay() {
+    const thisRunId = currentRunId;
     try {
         const response = await fetch('https://api.pexels.com/v1/curated?per_page=1', {
             headers: { Authorization: pexelsApiKey }
         });
         const data = await response.json();
+        if (thisRunId !== currentRunId) return; // cancelled
         const newImageUrl = data.photos[0].src.original;
         // ✅ Add to the 'images' array
         images.push({ id: null, url: newImageUrl });
+        if (thisRunId !== currentRunId) return;
         showNextImageWithUrl(newImageUrl);
     } catch (error) {
         console.error("Failed to fetch new random image.");
+        if (thisRunId !== currentRunId) return;
         showNextImage();
     }
 }
 
 function showNextImageWithUrl(url) {
     if (isPaused) return;
-    clearTimeout(timerId);
+    const thisRunId = currentRunId;
+    if (timerId) {
+        clearTimeout(timerId);
+        timerId = null;
+    }
+    if (gapTimerId) {
+        clearTimeout(gapTimerId);
+        gapTimerId = null;
+    }
     
     const oldImage = imageContainer.querySelector('.active');
     if (oldImage) {
@@ -273,6 +303,7 @@ function showNextImageWithUrl(url) {
     }
     
     imageContainer.appendChild(newImage);
+    if (thisRunId !== currentRunId) return;
     showNextImage();
 }
 
@@ -295,10 +326,23 @@ function toggleScreensaver() {
         controlsPanel.style.opacity = 0; // Hide the panel
         controlsPanel.style.pointerEvents = 'none'; // Make it unclickable
         
+        startStopButton.textContent = 'Stop';
         startScreensaver();
     } else {
         isPaused = true;
-        clearTimeout(timerId);
+        // Clear any running timers
+        if (timerId) {
+            clearTimeout(timerId);
+            timerId = null;
+        }
+        if (gapTimerId) {
+            clearTimeout(gapTimerId);
+            gapTimerId = null;
+        }
+        // Invalidate any in-flight async operations
+        currentRunId = ++runCounter;
+        // Clear displayed images immediately
+        imageContainer.innerHTML = '';
         privacyOverlay.style.display = 'block';
         startStopButton.textContent = 'Start';
         controlsPanel.style.opacity = 1; // Show the panel
@@ -337,11 +381,14 @@ async function renderGallery() {
 
 startStopButton.addEventListener('click', toggleScreensaver);
 
+// Toggle screensaver when clicking outside the controls panel and gallery.
+// This preserves the UX of clicking the background to start/stop, but prevents
+// accidental toggles when interacting with UI elements.
 document.addEventListener('click', (event) => {
     if (event.detail === 1) {
-        if (!controlsPanel.contains(event.target) && !galleryOverlay.contains(event.target)) {
-            toggleScreensaver();
-        }
+        // If the click target is inside the controls panel or the gallery overlay, ignore it
+        if (controlsPanel.contains(event.target) || galleryOverlay.contains(event.target)) return;
+        toggleScreensaver();
     }
 });
 
@@ -364,8 +411,20 @@ photoUploadInput.addEventListener('change', async (event) => {
 });
 
 viewPhotosButton.addEventListener('click', async () => {
+    // Fully stop the screensaver before opening gallery
     isPaused = true;
-    clearTimeout(timerId);
+    if (timerId) {
+        clearTimeout(timerId);
+        timerId = null;
+    }
+    if (gapTimerId) {
+        clearTimeout(gapTimerId);
+        gapTimerId = null;
+    }
+    // Invalidate in-flight async work
+    currentRunId = ++runCounter;
+    // Clear displayed images immediately
+    imageContainer.innerHTML = '';
     galleryOverlay.style.display = 'flex';
     controlsPanel.style.opacity = 0;
     controlsPanel.style.pointerEvents = 'none';
@@ -412,17 +471,6 @@ document.getElementById('color-toggle').addEventListener('click', () => {
     }
 });
 
-displayModeSelect.addEventListener('change', () => {
-    if (!isPaused) {
-        startScreensaver();
-    }
-});
-
-intervalModeSelect.addEventListener('change', () => {
-    if (!isPaused) {
-        startScreensaver();
-    }
-});
 
 async function initializeApp() {
     await openDatabase();
@@ -437,3 +485,37 @@ async function initializeApp() {
 }
 
 initializeApp();
+
+// Add these listeners to your script.js file
+
+displayModeSelect.addEventListener('change', () => {
+    console.log('Display mode changed to:', displayModeSelect.value); // Added for debugging
+    if (displayModeSelect.value === 'manual') {
+        // Clear the inline display so the CSS rule (.control-group { display: flex }) applies
+        manualDisplayGroup.style.display = '';
+    } else {
+        manualDisplayGroup.style.display = 'none';
+    }
+    // This part of your existing code is correct for restarting the screensaver.
+    if (!isPaused) {
+        startScreensaver();
+    }
+});
+
+intervalModeSelect.addEventListener('change', () => {
+    console.log('Interval mode changed to:', intervalModeSelect.value); // Added for debugging
+    if (intervalModeSelect.value === 'manual') {
+        // Clear the inline display so the CSS rule (.control-group { display: flex }) applies
+        manualIntervalGroup.style.display = '';
+    } else {
+        manualIntervalGroup.style.display = 'none';
+    }
+    // This part of your existing code is correct for restarting the screensaver.
+    if (!isPaused) {
+        startScreensaver();
+    }
+});
+
+// Ensure manual control groups reflect the current select values on initial load
+displayModeSelect.dispatchEvent(new Event('change'));
+intervalModeSelect.dispatchEvent(new Event('change'));
