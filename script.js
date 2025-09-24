@@ -1,10 +1,8 @@
 // --- IMPORTANT: Paste your Pexels API Key here ---
 const pexelsApiKey = 'kvdJ40N3zriQrKtu1NV86lDp3rYIRJXz2eLBW6mo1qd6bsK8vuZ1zQr5';
 
-// --- DOM Elements ---
 const imageContainer = document.getElementById('image-container');
-const meditationTextContainer = document.getElementById('meditation-text');
-const overlay = document.getElementById('overlay');
+const privacyOverlay = document.getElementById('privacy-overlay');
 const controlsPanel = document.getElementById('controls-panel');
 const displayModeSelect = document.getElementById('display-mode');
 const manualDisplayGroup = document.getElementById('manual-display-group');
@@ -12,33 +10,35 @@ const intervalModeSelect = document.getElementById('interval-mode');
 const manualIntervalGroup = document.getElementById('manual-interval-group');
 const uploadButton = document.getElementById('upload-button');
 const photoUploadInput = document.getElementById('photo-upload');
+
 const startStopButton = document.getElementById('start-stop-button');
 const viewPhotosButton = document.getElementById('view-photos-button');
 const clearPhotosButton = document.getElementById('clear-photos-button');
 const galleryOverlay = document.getElementById('gallery-overlay');
 const closeGalleryButton = document.getElementById('close-gallery-button');
 const photoGallery = document.getElementById('photo-gallery');
+// Meditation mode elements
 const meditationToggleButton = document.getElementById('meditation-toggle-button');
 const meditationWordInput = document.getElementById('meditation-word');
 const breathingDurationInput = document.getElementById('breathing-duration');
-const blackAndWhiteToggle = document.getElementById('color-toggle');
+const meditationTextContainer = document.getElementById('meditation-text');
 
-// --- Global State Variables ---
-let images = []; // Holds all images: user-uploaded and Pexels.
+let images = []; // This array holds all images: user-uploaded and Pexels.
 let currentIndex = 0;
-let timerId = null;
+let timerId;
 let gapTimerId = null;
 let isBlackAndWhite = false;
 let isPaused = true;
 const cacheSize = 25;
 let runCounter = 0;
-let isFetchingImages = false;
-let isMeditationMode = false;
-let meditationAnimationId;
+let currentRunId = 0;
+let isFetchingImages = false; // Prevents multiple simultaneous fetches
+
 let db;
 const DB_NAME = 'screensaver_db';
 const STORE_NAME = 'photos';
-let wakeLock = null;
+let wakeLock = null; // New variable to hold the wake lock object
+let isMeditationMode = false;
 
 // --- IndexedDB Functions ---
 function openDatabase() {
@@ -126,12 +126,13 @@ function deleteImageFromDB(id) {
 }
 
 // --- Screensaver Logic ---
+
 function shuffle(array) {
     let currentIndex = array.length, randomIndex;
     while (currentIndex !== 0) {
         randomIndex = Math.floor(Math.random() * currentIndex);
         currentIndex--;
-        [array[currentIndex], array[randomIndex]] = [array[currentIndex], array[randomIndex]];
+        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
     }
     return array;
 }
@@ -165,8 +166,43 @@ function startScreensaver() {
         return;
     }
     isPaused = false;
-    runCounter++;
+    currentRunId = ++runCounter;
     showNextImage();
+}
+
+// --- Meditation Mode ---
+function startMeditation() {
+    // Pause any running screensaver timers and hide images
+    isPaused = false;
+    if (timerId) {
+        clearTimeout(timerId);
+        timerId = null;
+    }
+    if (gapTimerId) {
+        clearTimeout(gapTimerId);
+        gapTimerId = null;
+    }
+    // Hide image container and show meditation text
+    imageContainer.style.display = 'none';
+    meditationTextContainer.style.display = 'block';
+
+    const word = meditationWordInput.value || 'Breathe';
+    meditationTextContainer.textContent = word;
+
+    const duration = parseInt(breathingDurationInput.value, 10) || 10;
+    meditationTextContainer.style.animation = `breathing-animation ${duration}s ease-in-out infinite`;
+    meditationToggleButton.textContent = 'Exit Meditation Mode';
+    meditationToggleButton.classList.add('active');
+}
+
+function stopMeditation() {
+    // Stop animation and restore image container
+    meditationTextContainer.style.animation = '';
+    meditationTextContainer.style.display = 'none';
+    imageContainer.style.display = '';
+    meditationToggleButton.textContent = 'Turn On Meditation Mode';
+    meditationToggleButton.classList.remove('active');
+    isPaused = true; // keep paused until user explicitly starts screensaver
 }
 
 function showNextImage() {
@@ -196,12 +232,10 @@ function showNextImage() {
     
     const imageUrl = images[currentIndex].url;
     
-    // Create the image element first
     const newImage = new Image();
     newImage.src = imageUrl;
-    newImage.alt = "Screensaver Image";
-    
-    // Apply special effects directly to the image
+    newImage.classList.add('active');
+
     if (isBlackAndWhite) {
         newImage.classList.add('black-and-white');
     }
@@ -212,15 +246,8 @@ function showNextImage() {
     } else if (effect < 0.66) {
         newImage.classList.add('zoom-out-animation');
     }
-
-    let finalElement;
-    // The polaroid effect is now handled exclusively in the gallery, not the screensaver.
-    finalElement = newImage;
     
-    // Add the active class to the final element being appended
-    finalElement.classList.add('active');
-
-    imageContainer.appendChild(finalElement);
+    imageContainer.appendChild(newImage);
 
     currentIndex = (currentIndex + 1) % images.length;
     
@@ -258,21 +285,6 @@ function showNextImage() {
     }, photoDisplayTime);
 }
 
-// --- Meditation Mode Logic ---
-function startMeditationMode() {
-    isPaused = false;
-    imageContainer.style.display = 'none';
-    meditationTextContainer.style.display = 'block';
-
-    const word = meditationWordInput.value || 'Breathe';
-    meditationTextContainer.textContent = word;
-
-    const duration = parseInt(breathingDurationInput.value, 10);
-    document.documentElement.style.setProperty('--breathing-duration', `${duration}s`);
-    meditationTextContainer.style.animation = `breathing-animation ${duration}s ease-in-out infinite`;
-}
-
-// --- Core Screensaver Toggle Function ---
 async function toggleScreensaver() {
     if (isPaused) {
         try {
@@ -293,18 +305,12 @@ async function toggleScreensaver() {
             element.msRequestFullscreen();
         }
         
-    document.body.classList.add('playing');
-    document.documentElement.classList.add('playing');
-    overlay.style.display = 'none';
-    controlsPanel.style.opacity = 0;
-    controlsPanel.style.pointerEvents = 'none';
+        privacyOverlay.style.display = 'none';
+        controlsPanel.style.opacity = 0;
+        controlsPanel.style.pointerEvents = 'none';
         
-        if (isMeditationMode) {
-            startMeditationMode();
-        } else {
-            startScreensaver();
-        }
         startStopButton.textContent = 'Stop';
+        startScreensaver();
     } else {
         isPaused = true;
         if (timerId) {
@@ -315,22 +321,12 @@ async function toggleScreensaver() {
             clearTimeout(gapTimerId);
             gapTimerId = null;
         }
-        if (meditationAnimationId) {
-            clearInterval(meditationAnimationId);
-            meditationAnimationId = null;
-            meditationTextContainer.style.animation = '';
-        }
-
-        runCounter++;
+        currentRunId = ++runCounter;
         imageContainer.innerHTML = '';
-        imageContainer.style.display = 'block';
-        meditationTextContainer.style.display = 'none';
-        
-    document.body.classList.remove('playing');
-    document.documentElement.classList.remove('playing');
-    overlay.style.display = 'block';
-    controlsPanel.style.opacity = 1;
-    controlsPanel.style.pointerEvents = 'auto';
+        privacyOverlay.style.display = 'block';
+        startStopButton.textContent = 'Start';
+        controlsPanel.style.opacity = 1;
+        controlsPanel.style.pointerEvents = 'auto';
         
         if (wakeLock !== null) {
             try {
@@ -351,11 +347,9 @@ async function toggleScreensaver() {
         } else if (document.msExitFullscreen) {
             document.msExitFullscreen();
         }
-        startStopButton.textContent = 'Start';
     }
 }
 
-// --- Gallery Logic ---
 async function renderGallery() {
     photoGallery.innerHTML = '';
     const userPhotos = await getImagesFromDB();
@@ -363,17 +357,9 @@ async function renderGallery() {
         photoGallery.innerHTML = '<p style="color:white;text-align:center;">You have no photos uploaded yet.</p>';
         return;
     }
-    // Polaroid effect is now a default for the gallery
-    const isPolaroidActive = true; 
-
     userPhotos.forEach(photo => {
         const item = document.createElement('div');
         item.className = 'gallery-item';
-        
-        if (isPolaroidActive) {
-            item.classList.add('polaroid');
-        }
-        
         item.innerHTML = `<img src="${photo.url}" alt="Uploaded Photo">
                           <button class="delete-button" data-id="${photo.id}">x</button>`;
         photoGallery.appendChild(item);
@@ -381,25 +367,32 @@ async function renderGallery() {
 }
 
 // --- Event Listeners ---
+
 startStopButton.addEventListener('click', toggleScreensaver);
 
+// Meditation toggle
 meditationToggleButton.addEventListener('click', () => {
     isMeditationMode = !isMeditationMode;
-    meditationToggleButton.textContent = isMeditationMode ? 'Exit Meditation Mode' : 'Toggle Meditation Mode';
-    meditationToggleButton.classList.toggle('active', isMeditationMode);
-    startStopButton.textContent = isMeditationMode ? 'Start Meditation' : 'Start';
+    if (isMeditationMode) {
+        startMeditation();
+        // Update start button label for clarity
+        startStopButton.textContent = 'Start Meditation';
+    } else {
+        stopMeditation();
+        startStopButton.textContent = 'Start';
+    }
 });
 
-// Added event listener for touch, mouse, and device motion
+// Added event listener for touch
 document.addEventListener('touchstart', (event) => {
     if (!isPaused) {
         toggleScreensaver();
     }
 }, { passive: true });
 
+// Added event listener for device motion
 const movementThreshold = 10;
 let lastAcceleration = { x: 0, y: 0, z: 0 };
-// This listener checks for significant device motion on mobile devices to exit the screensaver.
 window.addEventListener('devicemotion', (event) => {
     if (!isPaused && event.accelerationIncludingGravity) {
         const { x, y, z } = event.accelerationIncludingGravity;
@@ -414,60 +407,18 @@ window.addEventListener('devicemotion', (event) => {
     }
 });
 
-// For desktop, the screensaver will now only exit on a deliberate click.
-document.addEventListener('click', (event) => {
-    if (event.detail === 1) {
-        if (controlsPanel.contains(event.target) || galleryOverlay.contains(event.target) || overlay.contains(event.target)) return;
+// Added event listener for mouse movement
+document.addEventListener('mousemove', (event) => {
+    if (!isPaused) {
         toggleScreensaver();
     }
 });
 
-// Fix: Prevent clicks and touch events inside the controls panel from bubbling up
-// We've updated this to allow input fields to work correctly
-controlsPanel.addEventListener('click', (event) => {
-    // Only stop propagation if the clicked element is not an input/select/textarea
-    const tag = (event.target.tagName || '').toUpperCase();
-    if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') {
-        event.stopPropagation();
+document.addEventListener('click', (event) => {
+    if (event.detail === 1) {
+        if (controlsPanel.contains(event.target) || galleryOverlay.contains(event.target)) return;
+        toggleScreensaver();
     }
-});
-controlsPanel.addEventListener('touchstart', (event) => {
-    // Only stop propagation if the touched element is not an input/select/textarea
-    const tag = (event.target.tagName || '').toUpperCase();
-    if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') {
-        event.stopPropagation();
-    }
-});
-
-// Workaround for iOS PWA: on touchend, if an input/select/textarea inside the
-// controls panel was tapped, explicitly focus it and scroll it into view. This
-// helps ensure the on-screen keyboard appears in standalone PWAs where focus
-// can otherwise be blocked.
-controlsPanel.addEventListener('touchend', (event) => {
-    const el = event.target;
-    if (!el) return;
-    const tag = (el.tagName || '').toUpperCase();
-    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') {
-        // Only act on direct user interaction
-        try {
-            el.focus({ preventScroll: false });
-        } catch (e) {
-            // some browsers don't support options object
-            el.focus();
-        }
-        // Scroll the control into view so the keyboard doesn't overlap it
-        setTimeout(() => {
-            if (typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        }, 50);
-    }
-});
-
-// Fix: Prevent clicks and touch events inside the gallery from bubbling up
-galleryOverlay.addEventListener('click', (event) => {
-    event.stopPropagation();
-});
-galleryOverlay.addEventListener('touchstart', (event) => {
-    event.stopPropagation();
 });
 
 uploadButton.addEventListener('click', () => {
@@ -482,7 +433,7 @@ photoUploadInput.addEventListener('change', async (event) => {
         images = shuffle(userImages);
         
         if (!isPaused) {
-            toggleScreensaver();
+            startScreensaver();
         }
     }
 });
@@ -497,7 +448,7 @@ viewPhotosButton.addEventListener('click', async () => {
         clearTimeout(gapTimerId);
         gapTimerId = null;
     }
-    runCounter++;
+    currentRunId = ++runCounter;
     imageContainer.innerHTML = '';
     galleryOverlay.style.display = 'flex';
     controlsPanel.style.opacity = 0;
@@ -508,7 +459,7 @@ viewPhotosButton.addEventListener('click', async () => {
 closeGalleryButton.addEventListener('click', () => {
     galleryOverlay.style.display = 'none';
     if (!isPaused) {
-        toggleScreensaver();
+        startScreensaver();
     } else {
         controlsPanel.style.opacity = 1;
         controlsPanel.style.pointerEvents = 'auto';
@@ -532,9 +483,9 @@ photoGallery.addEventListener('click', async (event) => {
     }
 });
 
-blackAndWhiteToggle.addEventListener('click', () => {
+document.getElementById('color-toggle').addEventListener('click', () => {
     isBlackAndWhite = !isBlackAndWhite;
-    blackAndWhiteToggle.textContent = isBlackAndWhite ? 'Color Mode' : 'Black & White';
+    document.getElementById('color-toggle').textContent = isBlackAndWhite ? 'Color Mode' : 'Black & White';
     const activeImage = imageContainer.querySelector('.active');
     if (activeImage) {
         if (isBlackAndWhite) {
@@ -546,9 +497,11 @@ blackAndWhiteToggle.addEventListener('click', () => {
 });
 
 document.addEventListener('visibilitychange', async () => {
+    // If the screensaver is running and the page is hidden, stop it.
     if (!isPaused && document.visibilityState === 'hidden') {
         toggleScreensaver();
     }
+    // If we're visible and had a wake lock, try to re-acquire it.
     if (wakeLock !== null && document.visibilityState === 'visible') {
         try {
             wakeLock = await navigator.wakeLock.request('screen');
@@ -559,7 +512,6 @@ document.addEventListener('visibilitychange', async () => {
     }
 });
 
-// This function initializes the application on page load.
 async function initializeApp() {
     await openDatabase();
     const userImages = await getImagesFromDB();
@@ -580,7 +532,7 @@ displayModeSelect.addEventListener('change', () => {
         manualDisplayGroup.style.display = 'none';
     }
     if (!isPaused) {
-        toggleScreensaver();
+        startScreensaver();
     }
 });
 
@@ -591,7 +543,7 @@ intervalModeSelect.addEventListener('change', () => {
         manualIntervalGroup.style.display = 'none';
     }
     if (!isPaused) {
-        toggleScreensaver();
+        startScreensaver();
     }
 });
 
