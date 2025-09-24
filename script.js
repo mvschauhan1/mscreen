@@ -368,7 +368,8 @@ async function renderGallery() {
         photoGallery.innerHTML = '<p style="color:white;text-align:center;">You have no photos uploaded yet.</p>';
         return;
     }
-    const isPolaroidActive = polaroidToggle.checked;
+    // Polaroid effect is now a default for the gallery
+    const isPolaroidActive = true; 
 
     userPhotos.forEach(photo => {
         const item = document.createElement('div');
@@ -426,8 +427,19 @@ document.addEventListener('click', (event) => {
     }
 });
 
-// Fix: Prevent clicks inside the controls panel from bubbling up
+// Fix: Prevent clicks and touch events inside the controls panel from bubbling up
 controlsPanel.addEventListener('click', (event) => {
+    event.stopPropagation();
+});
+controlsPanel.addEventListener('touchstart', (event) => {
+    event.stopPropagation();
+});
+
+// Fix: Prevent clicks and touch events inside the gallery from bubbling up
+galleryOverlay.addEventListener('click', (event) => {
+    event.stopPropagation();
+});
+galleryOverlay.addEventListener('touchstart', (event) => {
     event.stopPropagation();
 });
 
@@ -493,9 +505,8 @@ photoGallery.addEventListener('click', async (event) => {
     }
 });
 
-polaroidToggle.addEventListener('change', () => {
-    renderGallery();
-});
+// The polaroid toggle is no longer needed as the effect is now default for the gallery.
+// We'll remove the change event listener for it.
 
 blackAndWhiteToggle.addEventListener('click', () => {
     isBlackAndWhite = !isBlackAndWhite;
