@@ -439,6 +439,29 @@ controlsPanel.addEventListener('touchstart', (event) => {
     }
 });
 
+// Workaround for iOS PWA: on touchend, if an input/select/textarea inside the
+// controls panel was tapped, explicitly focus it and scroll it into view. This
+// helps ensure the on-screen keyboard appears in standalone PWAs where focus
+// can otherwise be blocked.
+controlsPanel.addEventListener('touchend', (event) => {
+    const el = event.target;
+    if (!el) return;
+    const tag = (el.tagName || '').toUpperCase();
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') {
+        // Only act on direct user interaction
+        try {
+            el.focus({ preventScroll: false });
+        } catch (e) {
+            // some browsers don't support options object
+            el.focus();
+        }
+        // Scroll the control into view so the keyboard doesn't overlap it
+        setTimeout(() => {
+            if (typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }, 50);
+    }
+});
+
 // Fix: Prevent clicks and touch events inside the gallery from bubbling up
 galleryOverlay.addEventListener('click', (event) => {
     event.stopPropagation();
