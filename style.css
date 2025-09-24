@@ -1,9 +1,8 @@
 /* Universal and Body Styles */
 :root {
-    font-size: 16px; /* Base font size */
+    font-size: 16px; /* Base font size for better scaling */
 }
 
-/* Update the body style */
 body, html {
     margin: 0;
     padding: 0;
@@ -12,12 +11,12 @@ body, html {
     background-color: #000;
     height: 100vh;
     width: 100vw;
-    display: flex; /* Make body a flex container */
-    justify-content: center; /* Center horizontally */
-    align-items: center; /* Center vertically */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #f0f0f0;
 }
 
-/* ... The rest of your CSS remains the same ... */
 /* Image Container and Image Styles */
 #image-container {
     position: absolute;
@@ -66,22 +65,26 @@ body, html {
     animation: slow-zoom-out 20s linear forwards;
 }
 
-/* UI Elements */
+/* --- UI Elements --- */
+
+/* Privacy Overlay */
 #privacy-overlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: black;
+    background-color: rgba(0, 0, 0, 0.7);
     z-index: 10;
-    display: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 /* Control Panel */
 #controls-panel {
-
-    /* background: rgba(18, 18, 18, 0.85); */
+    background: rgba(18, 18, 18, 0.85);
+    backdrop-filter: blur(10px);
     padding: clamp(1rem, 2vw, 1.5rem);
     border-radius: 12px;
     display: flex;
@@ -93,11 +96,13 @@ body, html {
     transition: opacity 0.3s ease-in-out;
     max-width: 90vw;
 }
+
 .control-group {
     display: flex;
     flex-direction: column;
     gap: 5px;
     white-space: nowrap;
+    width: 100%;
 }
 
 #controls-panel label {
@@ -119,6 +124,7 @@ body, html {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
+    width: 100%;
 }
 
 #controls-panel select:hover,
@@ -134,8 +140,17 @@ body, html {
     border-color: #292d31;
 }
 
-/* New rule for start/stop button */
-/* Make the button a vibrant green */
+/* Button Group */
+.button-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+}
+
+/* Start/Stop Button - Consolidated Rule */
 #start-stop-button {
     font-weight: bold;
     font-size: clamp(1rem, 2vw, 1.2rem);
@@ -143,23 +158,41 @@ body, html {
     background-color: #2ECC71; /* A vibrant, eye-catching green */
     border: none;
     transition: background-color 0.2s ease, transform 0.2s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Add a subtle shadow */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    width: 100%;
 }
 
-/* Change color and add a slight lift on hover */
 #start-stop-button:hover {
-    background-color: #27AE60; /* A slightly darker green for the hover state */
-    transform: translateY(-2px); /* Lifts the button slightly */
+    background-color: #27AE60;
+    transform: translateY(-2px);
 }
 
-/* New rule for button group */
-.button-group {
-    display: flex;
-    gap: 10px;
-    align-items: center;
+/* App Title: place it inside the controls panel above the buttons */
+#app-title {
+    position: relative; /* flow with the controls panel */
+    width: 100%;
+    margin: 0 0 0.5rem 0;
+    color: white;
+    text-align: center;
+    pointer-events: none;
+    user-select: none;
+    z-index: 2;
 }
 
-/* Gallery Overlay and its components */
+#app-title h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.25rem, 4vw, 3rem);
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+/* Hide the title when the screensaver is playing */
+.playing #app-title {
+    display: none;
+}
+
+/* --- Gallery Overlay --- */
 #gallery-overlay {
     position: fixed;
     top: 0;
@@ -240,10 +273,9 @@ body, html {
     cursor: pointer;
 }
 
-/* Media Query for smaller screens (e.g., phones in portrait mode) */
+/* --- Media Query for smaller screens --- */
 @media (max-width: 768px) {
     #controls-panel {
-        flex-direction: column;
         gap: 10px;
         align-items: stretch;
         padding: 10px;
@@ -259,44 +291,4 @@ body, html {
         flex-direction: column;
         align-items: stretch;
     }
-}
-
-
-/* New rule for start/stop button */
-#start-stop-button {
-    font-weight: bold;
-    font-size: clamp(2rem, 3vw, 1.5rem);
-    padding: 12px 24px;
-    background-color: #181919;
-    border: 2px solid white;
-    transition: background-color 0.2s ease;
-}
-
-#start-stop-button:hover {
-    background-color: #040404;
-}
-
-#app-title {
-    position: absolute;
-    top: 21%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    text-align: center;
-    pointer-events: none; /* Allows clicks to pass through to the screensaver */
-    user-select: none;
-    z-index: 1000;
-}
-
-#app-title h1 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 5rem;
-    font-weight: 700;
-    margin: 0;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7); /* Adds a subtle shadow for visibility */
-}
-
-/* Hide the title when the screensaver is playing */
-.playing #app-title {
-    display: none;
 }
