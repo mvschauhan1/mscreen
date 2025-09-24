@@ -1,4 +1,4 @@
-// --- IMPORTANT: Paste your Pexels API Key here ---
+// --- IMPORTANT: Paste your Pexels API Key here. ---
 const pexelsApiKey = 'kvdJ40N3zriQrKtu1NV86lDp3rYIRJXz2eLBW6mo1qd6bsK8vuZ1zQr5';
 
 // --- DOM Elements ---
