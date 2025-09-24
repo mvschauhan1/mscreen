@@ -436,4 +436,22 @@ body, html {
     #controls-panel select {
         width: 100%;
     }
+
+    /* --- FIX for main toggle button alignment --- */
+    .main-toggles {
+        display: flex; /* Use flexbox for better centering */
+        flex-direction: column; /* Stack buttons vertically */
+        align-items: center; /* Center the buttons within the container */
+        gap: 10px; /* Maintain consistent spacing */
+    }
+
+    .main-toggles #start-stop-button {
+        width: 100%; /* Ensure start button fills the width */
+    }
+
+    .main-toggles #meditation-toggle-button,
+    .main-toggles #color-toggle {
+        width: 90%; /* Give these buttons a consistent, smaller width */
+        align-self: center; /* Explicitly center them within the flex container */
+    }
 }
