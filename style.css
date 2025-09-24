@@ -6,7 +6,6 @@
 body, html {
     margin: 0;
     padding: 0;
-    overflow: hidden;
     font-family: 'Inter', sans-serif;
     background-color: #000;
     height: 100vh;
@@ -15,6 +14,12 @@ body, html {
     justify-content: center;
     align-items: center;
     color: #f0f0f0;
+}
+
+/* Only hide overflow when the screensaver is playing. This allows the on-screen
+   keyboard on iOS to resize the viewport and properly bring input fields into view. */
+body.playing, html.playing {
+    overflow: hidden;
 }
 
 /* Image Container and Image Styles */
@@ -122,6 +127,11 @@ body, html {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+}
+
+/* Improve touch scrolling responsiveness inside the panel on iOS */
+#controls-panel {
+    -webkit-overflow-scrolling: touch;
 }
 
 .controls-section {
@@ -413,6 +423,15 @@ body, html {
         gap: 15px;
         padding: 15px;
         width: 90vw;
+    }
+
+    /* Avoid translate transforms on small screens which can prevent inputs from
+       receiving focus / opening the on-screen keyboard in some iOS standalone PWAs. */
+    #controls-panel {
+        top: auto;
+        bottom: 5vh;
+        left: 50%;
+        transform: translateX(-50%);
     }
     .controls-section {
         gap: 10px;
