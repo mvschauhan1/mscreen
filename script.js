@@ -1,4 +1,4 @@
-// --- IMPORTANT: Paste your Pexels API Key here. ---
+// --- IMPORTANT: Paste your Pexels API Key here ---
 const pexelsApiKey = 'kvdJ40N3zriQrKtu1NV86lDp3rYIRJXz2eLBW6mo1qd6bsK8vuZ1zQr5';
 
 // --- DOM Elements ---
@@ -21,7 +21,6 @@ const photoGallery = document.getElementById('photo-gallery');
 const meditationToggleButton = document.getElementById('meditation-toggle-button');
 const meditationWordInput = document.getElementById('meditation-word');
 const breathingDurationInput = document.getElementById('breathing-duration');
-const polaroidToggle = document.getElementById('polaroid-toggle');
 const blackAndWhiteToggle = document.getElementById('color-toggle');
 
 // --- Global State Variables ---
@@ -215,15 +214,8 @@ function showNextImage() {
     }
 
     let finalElement;
-    if (polaroidToggle.checked) {
-        // Wrap the image in a div for the polaroid effect
-        const wrapper = document.createElement('div');
-        wrapper.classList.add('polaroid');
-        wrapper.appendChild(newImage);
-        finalElement = wrapper;
-    } else {
-        finalElement = newImage;
-    }
+    // The polaroid effect is now handled exclusively in the gallery, not the screensaver.
+    finalElement = newImage;
     
     // Add the active class to the final element being appended
     finalElement.classList.add('active');
@@ -305,13 +297,12 @@ async function toggleScreensaver() {
         controlsPanel.style.opacity = 0;
         controlsPanel.style.pointerEvents = 'none';
         
-        startStopButton.textContent = 'Stop';
-
         if (isMeditationMode) {
             startMeditationMode();
         } else {
             startScreensaver();
         }
+        startStopButton.textContent = 'Stop';
     } else {
         isPaused = true;
         if (timerId) {
@@ -334,7 +325,6 @@ async function toggleScreensaver() {
         meditationTextContainer.style.display = 'none';
         
         overlay.style.display = 'block';
-        startStopButton.textContent = 'Start';
         controlsPanel.style.opacity = 1;
         controlsPanel.style.pointerEvents = 'auto';
         
@@ -357,6 +347,7 @@ async function toggleScreensaver() {
         } else if (document.msExitFullscreen) {
             document.msExitFullscreen();
         }
+        startStopButton.textContent = 'Start';
     }
 }
 
@@ -404,6 +395,7 @@ document.addEventListener('touchstart', (event) => {
 
 const movementThreshold = 10;
 let lastAcceleration = { x: 0, y: 0, z: 0 };
+// This listener checks for significant device motion on mobile devices to exit the screensaver.
 window.addEventListener('devicemotion', (event) => {
     if (!isPaused && event.accelerationIncludingGravity) {
         const { x, y, z } = event.accelerationIncludingGravity;
@@ -419,7 +411,6 @@ window.addEventListener('devicemotion', (event) => {
 });
 
 // For desktop, the screensaver will now only exit on a deliberate click.
-// The too-sensitive mousemove listener has been removed.
 document.addEventListener('click', (event) => {
     if (event.detail === 1) {
         if (controlsPanel.contains(event.target) || galleryOverlay.contains(event.target) || overlay.contains(event.target)) return;
@@ -428,11 +419,18 @@ document.addEventListener('click', (event) => {
 });
 
 // Fix: Prevent clicks and touch events inside the controls panel from bubbling up
+// We've updated this to allow input fields to work correctly
 controlsPanel.addEventListener('click', (event) => {
-    event.stopPropagation();
+    // Only stop propagation if the clicked element is not an input or select field
+    if (event.target.tagName !== 'INPUT' && event.target.tagName !== 'SELECT') {
+        event.stopPropagation();
+    }
 });
 controlsPanel.addEventListener('touchstart', (event) => {
-    event.stopPropagation();
+    // Only stop propagation if the touched element is not an input or select field
+    if (event.target.tagName !== 'INPUT' && event.target.tagName !== 'SELECT') {
+        event.stopPropagation();
+    }
 });
 
 // Fix: Prevent clicks and touch events inside the gallery from bubbling up
@@ -505,9 +503,6 @@ photoGallery.addEventListener('click', async (event) => {
     }
 });
 
-// The polaroid toggle is no longer needed as the effect is now default for the gallery.
-// We'll remove the change event listener for it.
-
 blackAndWhiteToggle.addEventListener('click', () => {
     isBlackAndWhite = !isBlackAndWhite;
     blackAndWhiteToggle.textContent = isBlackAndWhite ? 'Color Mode' : 'Black & White';
@@ -535,6 +530,7 @@ document.addEventListener('visibilitychange', async () => {
     }
 });
 
+// This function initializes the application on page load.
 async function initializeApp() {
     await openDatabase();
     const userImages = await getImagesFromDB();
