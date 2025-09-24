@@ -3,78 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mscreen</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json" />
-    <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-            .then(reg => console.log('Service Worker registered!', reg))
-            .catch(err => console.log('Service Worker registration failed: ', err));
-        });
-    }
-    </script>
+    <title>Mscreen - Your Digital Screensaver</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
+    <!-- The main screensaver image container -->
     <div id="image-container"></div>
-    <div id="privacy-overlay">
-    </div>
+    <!-- The meditation text that appears over the images -->
+    <div id="meditation-text"></div>
+    <!-- The new overlay div for the semi-transparent background -->
+    <div id="overlay"></div>
+    <!-- The control panel, now a direct child of the body for more reliable centering -->
     <div id="controls-panel">
-            <div id="app-container">
-                <div id="app-title">
-                    <h1>Mscreen</h1>
-                </div> 
-            </div>
-        <button id="start-stop-button">Start</button>
-
-        <div class="button-group">
-            <button id="upload-button">Upload Photos</button>
-            <input type="file" id="photo-upload" accept="image/*" multiple style="display: none;">
-            <button id="view-photos-button">View Photos</button>
-            <button id="clear-photos-button">Clear My Photos</button>
-        </div>
-
-        <div class="control-group">
-            <label for="display-mode">Display Duration</label>
-            <select id="display-mode">
-                <option value="random">Random</option>
-                <option value="manual">Manual</option>
-            </select>
-        </div>
-        <div class="control-group" id="manual-display-group" style="display: none;">
-            <label for="manual-display-time">Time (seconds)</label>
-            <input type="number" id="manual-display-time" value="9" min="9" max="60">
+        <div id="app-title">
+            <h1>Mscreen</h1>
         </div>
         
-        <div class="control-group">
-            <label for="interval-mode">Interval Gap</label>
-            <select id="interval-mode">
-                <option value="random">Random</option>
-                <option value="manual">Manual</option>
-            </select>
-        </div>
-        <div class="control-group" id="manual-interval-group" style="display: none;">
-            <label for="manual-interval-time">Time (seconds)</label>
-            <input type="number" id="manual-interval-time" value="9" min="5" max="60">
+        <div class="controls-section">
+            <h3>Display Settings</h3>
+            <div class="responsive-control-row">
+                <div class="control-group">
+                    <label for="display-mode">Display Mode</label>
+                    <select id="display-mode">
+                        <option value="random">Random</option>
+                        <option value="manual">Manual</option>
+                    </select>
+                </div>
+                <div id="manual-display-group" class="control-group">
+                    <label for="manual-display-time">Display Time (s)</label>
+                    <input type="number" id="manual-display-time" value="15" min="5" max="60">
+                </div>
+            </div>
+            <div class="responsive-control-row">
+                <div class="control-group">
+                    <label for="interval-mode">Interval Mode</label>
+                    <select id="interval-mode">
+                        <option value="random">Random</option>
+                        <option value="manual">Manual</option>
+                    </select>
+                </div>
+                <div id="manual-interval-group" class="control-group">
+                    <label for="manual-interval-time">Interval Time (s)</label>
+                    <input type="number" id="manual-interval-time" value="15" min="5" max="60">
+                </div>
+            </div>
         </div>
 
-        <button id="color-toggle">Black & White</button>
+        <div class="controls-section">
+            <h3>Meditation Mode</h3>
+            <div class="horizontal-group">
+                <div class="control-group">
+                    <label for="meditation-word">Word to Focus On</label>
+                    <input type="text" id="meditation-word" placeholder="e.g. Breathe">
+                </div>
+                <div class="control-group">
+                    <label for="breathing-duration">Breathing Cycle Duration (s)</label>
+                    <input type="number" id="breathing-duration" value="10" min="5" max="30">
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <div class="main-toggles">
+                <button id="start-stop-button">Start</button>
+                <button id="meditation-toggle-button">Turn On Meditation Mode</button>
+                <button id="color-toggle">Black & White</button>
+            </div>
+            <div class="photo-actions">
+                <button id="upload-button">Upload Photo</button>
+                <input type="file" id="photo-upload" accept="image/*" multiple style="display:none;">
+                <button id="view-photos-button">View Photos</button>
+                <button id="clear-photos-button">Clear Photos</button>
+            </div>
+        </div>
     </div>
-
+    
     <div id="gallery-overlay">
         <div id="gallery-header">
             <h2>Your Photos</h2>
-            <button id="close-gallery-button">Close</button>
+            <label class="toggle-switch">
+                <input type="checkbox" id="polaroid-toggle">
+                <span>Polaroid</span>
+            </label>
+            <button id="close-gallery-button">Close Gallery</button>
         </div>
-        <div id="photo-gallery">
-            </div>
+        <div id="photo-gallery"></div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Pexels API Key -->
+    <script src="./script.js"></script>
+
 </body>
 </html>
