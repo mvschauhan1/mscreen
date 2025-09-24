@@ -293,9 +293,11 @@ async function toggleScreensaver() {
             element.msRequestFullscreen();
         }
         
-        overlay.style.display = 'none';
-        controlsPanel.style.opacity = 0;
-        controlsPanel.style.pointerEvents = 'none';
+    document.body.classList.add('playing');
+    document.documentElement.classList.add('playing');
+    overlay.style.display = 'none';
+    controlsPanel.style.opacity = 0;
+    controlsPanel.style.pointerEvents = 'none';
         
         if (isMeditationMode) {
             startMeditationMode();
@@ -324,9 +326,11 @@ async function toggleScreensaver() {
         imageContainer.style.display = 'block';
         meditationTextContainer.style.display = 'none';
         
-        overlay.style.display = 'block';
-        controlsPanel.style.opacity = 1;
-        controlsPanel.style.pointerEvents = 'auto';
+    document.body.classList.remove('playing');
+    document.documentElement.classList.remove('playing');
+    overlay.style.display = 'block';
+    controlsPanel.style.opacity = 1;
+    controlsPanel.style.pointerEvents = 'auto';
         
         if (wakeLock !== null) {
             try {
@@ -421,14 +425,16 @@ document.addEventListener('click', (event) => {
 // Fix: Prevent clicks and touch events inside the controls panel from bubbling up
 // We've updated this to allow input fields to work correctly
 controlsPanel.addEventListener('click', (event) => {
-    // Only stop propagation if the clicked element is not an input or select field
-    if (event.target.tagName !== 'INPUT' && event.target.tagName !== 'SELECT') {
+    // Only stop propagation if the clicked element is not an input/select/textarea
+    const tag = (event.target.tagName || '').toUpperCase();
+    if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') {
         event.stopPropagation();
     }
 });
 controlsPanel.addEventListener('touchstart', (event) => {
-    // Only stop propagation if the touched element is not an input or select field
-    if (event.target.tagName !== 'INPUT' && event.target.tagName !== 'SELECT') {
+    // Only stop propagation if the touched element is not an input/select/textarea
+    const tag = (event.target.tagName || '').toUpperCase();
+    if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') {
         event.stopPropagation();
     }
 });
