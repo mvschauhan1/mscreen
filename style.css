@@ -333,29 +333,16 @@ body, html {
     padding-bottom: 50px;
 }
 
-/* FIX: Gallery photos no longer look distorted.
-   They now maintain their aspect ratio with a max size. */
+/* FIX: Ensure uploaded photos display correctly with polaroid style */
 .gallery-item {
     position: relative;
-    padding: 10px;
-    border-radius: 5px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    width: 150px; /* Fixed width to make polaroid consistent */
+    height: 180px; /* Fixed height for consistent polaroid size */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    width: auto;
-    height: auto;
-    max-width: 150px;
-    max-height: 180px;
 }
 
-.gallery-item img {
-    display: block;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    border-radius: 2px;
-}
-
-/* NEW: The polaroid class is now applied to the main screensaver image. */
+/* NEW: The polaroid class is applied to the gallery-item's inner wrapper.
+   This class is also used on the main screensaver images. */
 .polaroid {
     position: relative;
     background-color: white;
@@ -363,17 +350,25 @@ body, html {
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     transform: rotate(2deg); 
     transition: transform 0.5s ease-in-out, box-shadow 0.5s ease-in-out, padding 0.5s ease;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .polaroid:nth-child(even) {
     transform: rotate(-2deg); 
 }
 
-/* The image itself inside the polaroid container. */
+/* The image itself inside the polaroid container.
+   This ensures it fits correctly without distortion. */
 .polaroid img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: contain;
-    width: 100%;
-    height: 100%;
     border-radius: 2px;
 }
 
@@ -400,7 +395,7 @@ body, html {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-/* --- Media Query for smaller screens --- */
+/* --- Media Queries for better mobile layout --- */
 @media (min-width: 769px) {
     .responsive-control-row {
         display: flex;
@@ -425,13 +420,20 @@ body, html {
     .button-group {
         grid-template-columns: 1fr;
     }
-    .gallery-item {
-        max-width: 100px;
-        max-height: 120px;
+    
+    /* FIX: Make inputs fill the available space on mobile for better layout */
+    .responsive-control-row .control-group,
+    .horizontal-group .control-group {
+        flex: 1 1 100%;
     }
     
     .horizontal-group {
         flex-direction: column;
         gap: 10px;
+    }
+    
+    #controls-panel input,
+    #controls-panel select {
+        width: 100%;
     }
 }
