@@ -8,8 +8,9 @@ body, html {
     padding: 0;
     font-family: 'Inter', sans-serif;
     background-color: #000;
-    height: 100vh;
-    width: 100vw;
+    /* Use min-height/min-width so the viewport can resize when the on-screen keyboard appears */
+    min-height: 100vh;
+    min-width: 100vw;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -425,14 +426,19 @@ body.playing, html.playing {
         width: 90vw;
     }
 
-    /* Avoid translate transforms on small screens which can prevent inputs from
-       receiving focus / opening the on-screen keyboard in some iOS standalone PWAs. */
-    #controls-panel {
-        top: auto;
-        bottom: 5vh;
-        left: 50%;
-        transform: translateX(-50%);
-    }
+     /* Avoid translate transforms on small screens which can prevent inputs from
+         receiving focus / opening the on-screen keyboard in some iOS standalone PWAs. */
+     /* Use position:absolute so the viewport can resize and the keyboard can push
+         the controls panel up into view. Also use safe-area inset for notched devices. */
+     #controls-panel {
+          position: absolute;
+          top: auto;
+          bottom: env(safe-area-inset-bottom, 5vh);
+          left: 50%;
+          transform: translateX(-50%);
+          width: calc(100% - 32px);
+          max-width: 600px;
+     }
     .controls-section {
         gap: 10px;
     }
