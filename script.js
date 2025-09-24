@@ -1,8 +1,10 @@
 // --- IMPORTANT: Paste your Pexels API Key here ---
 const pexelsApiKey = 'kvdJ40N3zriQrKtu1NV86lDp3rYIRJXz2eLBW6mo1qd6bsK8vuZ1zQr5';
 
+// --- DOM Elements ---
 const imageContainer = document.getElementById('image-container');
-const privacyOverlay = document.getElementById('privacy-overlay');
+const meditationTextContainer = document.getElementById('meditation-text');
+const overlay = document.getElementById('overlay');
 const controlsPanel = document.getElementById('controls-panel');
 const displayModeSelect = document.getElementById('display-mode');
 const manualDisplayGroup = document.getElementById('manual-display-group');
@@ -10,29 +12,34 @@ const intervalModeSelect = document.getElementById('interval-mode');
 const manualIntervalGroup = document.getElementById('manual-interval-group');
 const uploadButton = document.getElementById('upload-button');
 const photoUploadInput = document.getElementById('photo-upload');
-
 const startStopButton = document.getElementById('start-stop-button');
 const viewPhotosButton = document.getElementById('view-photos-button');
 const clearPhotosButton = document.getElementById('clear-photos-button');
 const galleryOverlay = document.getElementById('gallery-overlay');
 const closeGalleryButton = document.getElementById('close-gallery-button');
 const photoGallery = document.getElementById('photo-gallery');
+const meditationToggleButton = document.getElementById('meditation-toggle-button');
+const meditationWordInput = document.getElementById('meditation-word');
+const breathingDurationInput = document.getElementById('breathing-duration');
+const polaroidToggle = document.getElementById('polaroid-toggle');
+const blackAndWhiteToggle = document.getElementById('color-toggle');
 
-let images = []; // This array holds all images: user-uploaded and Pexels.
+// --- Global State Variables ---
+let images = []; // Holds all images: user-uploaded and Pexels.
 let currentIndex = 0;
-let timerId;
+let timerId = null;
 let gapTimerId = null;
 let isBlackAndWhite = false;
 let isPaused = true;
 const cacheSize = 25;
 let runCounter = 0;
-let currentRunId = 0;
-let isFetchingImages = false; // Prevents multiple simultaneous fetches
-
+let isFetchingImages = false;
+let isMeditationMode = false;
+let meditationAnimationId;
 let db;
 const DB_NAME = 'screensaver_db';
 const STORE_NAME = 'photos';
-let wakeLock = null; // New variable to hold the wake lock object
+let wakeLock = null;
 
 // --- IndexedDB Functions ---
 function openDatabase() {
@@ -120,18 +127,16 @@ function deleteImageFromDB(id) {
 }
 
 // --- Screensaver Logic ---
-
 function shuffle(array) {
     let currentIndex = array.length, randomIndex;
     while (currentIndex !== 0) {
         randomIndex = Math.floor(Math.random() * currentIndex);
         currentIndex--;
-        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        [array[currentIndex], array[randomIndex]] = [array[currentIndex], array[randomIndex]];
     }
     return array;
 }
 
-// ✅ UPDATED: Function to fetch and add images to the main 'images' array
 async function fetchAndCacheImages() {
     if (isFetchingImages) return;
     isFetchingImages = true;
@@ -144,10 +149,8 @@ async function fetchAndCacheImages() {
         
         const newImages = data.photos.map(photo => ({ id: null, url: photo.src.original }));
         
-        // Filter out duplicates to avoid showing the same photo
         const uniquePexels = newImages.filter(newImg => !images.some(existingImg => existingImg.url === newImg.url));
         
-        // Add new images to the end and then re-shuffle the entire list
         images = shuffle([...images, ...uniquePexels]);
     } catch (error) {
         console.error(error);
@@ -163,7 +166,7 @@ function startScreensaver() {
         return;
     }
     isPaused = false;
-    currentRunId = ++runCounter;
+    runCounter++;
     showNextImage();
 }
 
@@ -184,14 +187,14 @@ function showNextImage() {
         setTimeout(() => oldImage.remove(), 1000);
     }
     
-    // ✅ NEW LOGIC: Pre-fetch more images if our list of Pexels photos is running low.
-    // We get all Pexels images that are *after* the current index.
-    const remainingPexelsImages = images.slice(currentIndex).filter(img => img.id === null);
-    if (remainingPexelsImages.length < 5 && !isFetchingImages) {
-        fetchAndCacheImages();
+    const hasUserPhotos = images.some(img => img.id !== null);
+    if (!hasUserPhotos) {
+        const remainingPexelsImages = images.slice(currentIndex).filter(img => img.id === null);
+        if (remainingPexelsImages.length < 5 && !isFetchingImages) {
+            fetchAndCacheImages();
+        }
     }
     
-    // Use the next image from our shuffled list
     const imageUrl = images[currentIndex].url;
     
     const newImage = new Image();
@@ -247,9 +250,21 @@ function showNextImage() {
     }, photoDisplayTime);
 }
 
-// The 'fetchNewImageAndDisplay' and 'showNextImageWithUrl' functions are no longer needed
-// because we are now pre-fetching a batch of images with 'fetchAndCacheImages'.
+// --- Meditation Mode Logic ---
+function startMeditationMode() {
+    isPaused = false;
+    imageContainer.style.display = 'none';
+    meditationTextContainer.style.display = 'block';
 
+    const word = meditationWordInput.value || 'Breathe';
+    meditationTextContainer.textContent = word;
+
+    const duration = parseInt(breathingDurationInput.value, 10);
+    document.documentElement.style.setProperty('--breathing-duration', `${duration}s`);
+    meditationTextContainer.style.animation = `breathing-animation ${duration}s ease-in-out infinite`;
+}
+
+// --- Core Screensaver Toggle Function ---
 async function toggleScreensaver() {
     if (isPaused) {
         try {
@@ -270,12 +285,17 @@ async function toggleScreensaver() {
             element.msRequestFullscreen();
         }
         
-        privacyOverlay.style.display = 'none';
+        overlay.style.display = 'none';
         controlsPanel.style.opacity = 0;
         controlsPanel.style.pointerEvents = 'none';
         
         startStopButton.textContent = 'Stop';
-        startScreensaver();
+
+        if (isMeditationMode) {
+            startMeditationMode();
+        } else {
+            startScreensaver();
+        }
     } else {
         isPaused = true;
         if (timerId) {
@@ -286,9 +306,18 @@ async function toggleScreensaver() {
             clearTimeout(gapTimerId);
             gapTimerId = null;
         }
-        currentRunId = ++runCounter;
+        if (meditationAnimationId) {
+            clearInterval(meditationAnimationId);
+            meditationAnimationId = null;
+            meditationTextContainer.style.animation = '';
+        }
+
+        runCounter++;
         imageContainer.innerHTML = '';
-        privacyOverlay.style.display = 'block';
+        imageContainer.style.display = 'block';
+        meditationTextContainer.style.display = 'none';
+        
+        overlay.style.display = 'block';
         startStopButton.textContent = 'Start';
         controlsPanel.style.opacity = 1;
         controlsPanel.style.pointerEvents = 'auto';
@@ -315,6 +344,7 @@ async function toggleScreensaver() {
     }
 }
 
+// --- Gallery Logic ---
 async function renderGallery() {
     photoGallery.innerHTML = '';
     const userPhotos = await getImagesFromDB();
@@ -322,9 +352,16 @@ async function renderGallery() {
         photoGallery.innerHTML = '<p style="color:white;text-align:center;">You have no photos uploaded yet.</p>';
         return;
     }
+    const isPolaroidActive = polaroidToggle.checked;
+
     userPhotos.forEach(photo => {
         const item = document.createElement('div');
         item.className = 'gallery-item';
+        
+        if (isPolaroidActive) {
+            item.classList.add('polaroid');
+        }
+        
         item.innerHTML = `<img src="${photo.url}" alt="Uploaded Photo">
                           <button class="delete-button" data-id="${photo.id}">x</button>`;
         photoGallery.appendChild(item);
@@ -332,12 +369,47 @@ async function renderGallery() {
 }
 
 // --- Event Listeners ---
-
 startStopButton.addEventListener('click', toggleScreensaver);
+
+meditationToggleButton.addEventListener('click', () => {
+    isMeditationMode = !isMeditationMode;
+    meditationToggleButton.textContent = isMeditationMode ? 'Exit Meditation Mode' : 'Toggle Meditation Mode';
+    meditationToggleButton.classList.toggle('active', isMeditationMode);
+    startStopButton.textContent = isMeditationMode ? 'Start Meditation' : 'Start';
+});
+
+// Added event listener for touch, mouse, and device motion
+document.addEventListener('touchstart', (event) => {
+    if (!isPaused) {
+        toggleScreensaver();
+    }
+}, { passive: true });
+
+const movementThreshold = 10;
+let lastAcceleration = { x: 0, y: 0, z: 0 };
+window.addEventListener('devicemotion', (event) => {
+    if (!isPaused && event.accelerationIncludingGravity) {
+        const { x, y, z } = event.accelerationIncludingGravity;
+        const dx = Math.abs(x - lastAcceleration.x);
+        const dy = Math.abs(y - lastAcceleration.y);
+        const dz = Math.abs(z - lastAcceleration.z);
+
+        if (dx > movementThreshold || dy > movementThreshold || dz > movementThreshold) {
+            toggleScreensaver();
+        }
+        lastAcceleration = { x, y, z };
+    }
+});
+
+document.addEventListener('mousemove', (event) => {
+    if (!isPaused) {
+        toggleScreensaver();
+    }
+});
 
 document.addEventListener('click', (event) => {
     if (event.detail === 1) {
-        if (controlsPanel.contains(event.target) || galleryOverlay.contains(event.target)) return;
+        if (controlsPanel.contains(event.target) || galleryOverlay.contains(event.target) || overlay.contains(event.target)) return;
         toggleScreensaver();
     }
 });
@@ -351,11 +423,10 @@ photoUploadInput.addEventListener('change', async (event) => {
     if (files.length > 0) {
         await addImagesToDB(Array.from(files));
         const userImages = await getImagesFromDB();
-        // When new photos are uploaded, we replace the current image list with the user's photos
         images = shuffle(userImages);
         
         if (!isPaused) {
-            startScreensaver();
+            toggleScreensaver();
         }
     }
 });
@@ -370,7 +441,7 @@ viewPhotosButton.addEventListener('click', async () => {
         clearTimeout(gapTimerId);
         gapTimerId = null;
     }
-    currentRunId = ++runCounter;
+    runCounter++;
     imageContainer.innerHTML = '';
     galleryOverlay.style.display = 'flex';
     controlsPanel.style.opacity = 0;
@@ -381,7 +452,7 @@ viewPhotosButton.addEventListener('click', async () => {
 closeGalleryButton.addEventListener('click', () => {
     galleryOverlay.style.display = 'none';
     if (!isPaused) {
-        startScreensaver();
+        toggleScreensaver();
     } else {
         controlsPanel.style.opacity = 1;
         controlsPanel.style.pointerEvents = 'auto';
@@ -405,9 +476,13 @@ photoGallery.addEventListener('click', async (event) => {
     }
 });
 
-document.getElementById('color-toggle').addEventListener('click', () => {
+polaroidToggle.addEventListener('change', () => {
+    renderGallery();
+});
+
+blackAndWhiteToggle.addEventListener('click', () => {
     isBlackAndWhite = !isBlackAndWhite;
-    document.getElementById('color-toggle').textContent = isBlackAndWhite ? 'Color Mode' : 'Black & White';
+    blackAndWhiteToggle.textContent = isBlackAndWhite ? 'Color Mode' : 'Black & White';
     const activeImage = imageContainer.querySelector('.active');
     if (activeImage) {
         if (isBlackAndWhite) {
@@ -419,6 +494,9 @@ document.getElementById('color-toggle').addEventListener('click', () => {
 });
 
 document.addEventListener('visibilitychange', async () => {
+    if (!isPaused && document.visibilityState === 'hidden') {
+        toggleScreensaver();
+    }
     if (wakeLock !== null && document.visibilityState === 'visible') {
         try {
             wakeLock = await navigator.wakeLock.request('screen');
@@ -433,10 +511,8 @@ async function initializeApp() {
     await openDatabase();
     const userImages = await getImagesFromDB();
     if (userImages.length > 0) {
-        // If user has uploaded photos, we use those.
         images = userImages;
     } else {
-        // Otherwise, we fetch the default set from Pexels.
         await fetchAndCacheImages();
     }
     startStopButton.textContent = 'Start';
@@ -451,7 +527,7 @@ displayModeSelect.addEventListener('change', () => {
         manualDisplayGroup.style.display = 'none';
     }
     if (!isPaused) {
-        startScreensaver();
+        toggleScreensaver();
     }
 });
 
@@ -462,7 +538,7 @@ intervalModeSelect.addEventListener('change', () => {
         manualIntervalGroup.style.display = 'none';
     }
     if (!isPaused) {
-        startScreensaver();
+        toggleScreensaver();
     }
 });
 
