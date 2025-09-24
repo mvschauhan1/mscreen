@@ -426,6 +426,11 @@ document.addEventListener('click', (event) => {
     }
 });
 
+// Fix: Prevent clicks inside the controls panel from bubbling up
+controlsPanel.addEventListener('click', (event) => {
+    event.stopPropagation();
+});
+
 uploadButton.addEventListener('click', () => {
     photoUploadInput.click();
 });
