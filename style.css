@@ -1,0 +1,472 @@
+/* Universal and Body Styles */
+:root {
+    font-size: 16px; /* Base font size for better scaling */
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: #000;
+    /* Use min-height/min-width so the viewport can resize when the on-screen keyboard appears */
+    min-height: 100vh;
+    min-width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #f0f0f0;
+}
+
+/* Only hide overflow when the screensaver is playing. This allows the on-screen
+   keyboard on iOS to resize the viewport and properly bring input fields into view. */
+body.playing, html.playing {
+    overflow: hidden;
+}
+
+/* Image Container and Image Styles */
+#image-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: opacity 1s ease-in-out;
+}
+
+#image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
+    transform-origin: center center;
+}
+
+#image-container img.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Black and White Filter and Zoom Animations */
+.black-and-white {
+    filter: grayscale(100%);
+}
+
+@keyframes slow-zoom-in {
+    from { transform: scale(1); }
+    to { transform: scale(1.15); }
+}
+
+@keyframes slow-zoom-out {
+    from { transform: scale(1.15); }
+    to { transform: scale(1); }
+}
+
+.zoom-in-animation {
+    animation: slow-zoom-in 20s linear forwards;
+}
+
+.zoom-out-animation {
+    animation: slow-zoom-out 20s linear forwards;
+}
+
+/* --- NEW: Meditation Text Animation --- */
+#meditation-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(3rem, 10vw, 8rem);
+    font-family: 'Bebas Neue', sans-serif;
+    color: white;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    display: none;
+    z-index: 10;
+}
+
+@keyframes breathing-animation {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+/* --- UI Elements - PROFESSIONAL REFRESH --- */
+
+/* New overlay for the semi-transparent background */
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 10;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Control Panel */
+#controls-panel {
+    background: rgba(18, 18, 18, 0.85);
+    backdrop-filter: blur(10px);
+    padding: clamp(1rem, 2vw, 2rem);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 20;
+    color: #f0f0f0;
+    transition: opacity 0.3s ease-in-out;
+    max-width: clamp(300px, 50vw, 450px);
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    
+    /* NEW: Centering with position fixed for reliability */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Improve touch scrolling responsiveness inside the panel on iOS */
+#controls-panel {
+    -webkit-overflow-scrolling: touch;
+}
+
+
+.controls-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+}
+
+.controls-section h3 {
+    margin: 0;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: #a0a0a0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+}
+        
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+/* New horizontal layout for specific control groups */
+.horizontal-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    max-width: 100%;
+}
+
+.horizontal-group .control-group {
+    flex: 1 1 1%; /* Sizing for horizontal layout with wrapping */
+}
+
+#controls-panel label {
+    font-size: clamp(0.75rem, 1.5vw, 0.9rem);
+    color: #b0b0b0;
+    flex-shrink: 0;
+}
+
+#controls-panel select,
+#controls-panel input,
+#controls-panel button {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    color: #f0f0f0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: clamp(0.8rem, 1.75vw, 1rem);
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: auto; /* Let the container handle sizing */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#controls-panel select:hover,
+#controls-panel input:hover,
+#controls-panel button:hover {
+    background-color: #3b3b3b;
+    box-shadow: 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+#controls-panel select:focus,
+#controls-panel input:focus,
+#controls-panel button:focus {
+    outline: none;
+    border-color: #555;
+    box-shadow: 0 0 0 2px #4a90e2; /* Blue focus ring */
+}
+
+/* Action Buttons Section */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Tightly group the main start/stop buttons */
+.main-toggles {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+/* Tightly group the photo action buttons */
+.photo-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+        
+#upload-button, #view-photos-button, #clear-photos-button {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Start/Stop Button */
+#start-stop-button {
+    font-weight: bold;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    background-color: #4a90e2; 
+    border: none;
+    color: white;
+    grid-column: span 2;
+}
+
+#start-stop-button:hover {
+    background-color: #3a7bd5;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+#meditation-toggle-button {
+    background-color: #388e3c;
+    color: white;
+}
+#meditation-toggle-button.active {
+    background-color: #d32f2f;
+}
+
+#color-toggle {
+    background-color: #7b1fa2;
+}
+
+/* App Title: place it inside the controls panel above the buttons */
+#app-title {
+    width: 100%;
+    margin-bottom: 1.5rem;
+    color: white;
+    text-align: center;
+    pointer-events: none;
+    user-select: none;
+}
+
+#app-title h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 5vw, 4rem); /* Increased prominence */
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+/* Hide the title and overlay when the screensaver is playing */
+.playing #app-title,
+.playing #controls-panel,
+.playing #overlay {
+    display: none;
+}
+
+/* Make Clear Photos button span both columns to center it */
+#clear-photos-button {
+    grid-column: span 2;
+}
+
+/* --- Gallery Overlay --- */
+#gallery-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.95);
+    z-index: 30;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+#gallery-header {
+    display: flex;
+    justify-content: space-between;
+    width: 90%;
+    max-width: 800px;
+    color: white;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+#gallery-header h2 {
+    margin: 0;
+}
+
+#close-gallery-button {
+    background: transparent;
+    border: 1px solid white;
+    color: white;
+    padding: 5px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#photo-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 25px;
+    width: 90%;
+    max-width: 800px;
+    overflow-y: auto;
+    padding-bottom: 50px;
+}
+
+/* FIX: Ensure uploaded photos display correctly with polaroid style */
+.gallery-item {
+    position: relative;
+    width: 150px; /* Fixed width to make polaroid consistent */
+    height: 180px; /* Fixed height for consistent polaroid size */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* NEW: The polaroid class is applied to the gallery-item's inner wrapper.
+   This class is also used on the main screensaver images. */
+.polaroid {
+    position: relative;
+    background-color: white;
+    padding: 1rem 1rem 4rem 1rem; /* Creates the bottom border */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transform: rotate(2deg); 
+    transition: transform 0.5s ease-in-out, box-shadow 0.5s ease-in-out, padding 0.5s ease;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.polaroid:nth-child(even) {
+    transform: rotate(-2deg); 
+}
+
+/* The image itself inside the polaroid container.
+   This ensures it fits correctly without distortion. */
+.polaroid img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 2px;
+}
+
+.gallery-item:hover {
+    transform: translateY(-5px) rotate(2deg);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+}
+
+.delete-button {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* --- Media Queries for better mobile layout --- */
+@media (min-width: 769px) {
+    .responsive-control-row {
+        display: flex;
+        gap: 15px;
+        justify-content: space-between;
+        align-items: flex-end;
+    }
+
+    .responsive-control-row .control-group {
+        flex: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    
+    /* FIX 1: Corrected positioning for iOS PWA Keyboard reliability.
+       Uses absolute positioning relative to the bottom, avoiding vertical transform. */
+    #controls-panel {
+        gap: 15px;
+        padding: 15px;
+        /* Using max-width instead of 90vw here for more predictable sizing */
+        max-width: 600px; 
+        width: calc(100% - 32px); /* Corrected width for padding on the sides */
+
+        position: absolute; 
+        top: 9%; /* IMPORTANT: Ensures it's not trying to center vertically */
+        bottom: env(safe-area-inset-bottom, 20px); /* Positions from the bottom edge */
+        left: 50%;
+        transform: translateX(-50%); /* Only centers horizontally */
+        
+        max-height: 95vh; /* Prevents overflow when keyboard is up */
+        overflow-y: auto;
+    }
+    
+    .controls-section {
+        gap: 5px;
+    }
+
+    /* FIX 2: DELETED all rules that forced stacking (e.g., flex-direction: column and grid-template-columns: 1fr) 
+       to ensure proportional, desktop-like shrinking on mobile. */
+
+    /* The following default desktop rules will now apply for a proportional look:
+        .button-group uses its desktop grid.
+        .responsive-control-row and .horizontal-group use their desktop flex rules.
+        .main-toggles uses its desktop grid (Start button spanning 2 columns).
+        .photo-actions uses its desktop grid (Clear Photos spanning 2 columns). 
+    */
+
+    /* Retaining essential input width to fill the proportionally scaled container */
+    #controls-panel input,
+    #controls-panel select {
+        width: 100%;
+    }
+    .horizontal-group {
+        gap: 1rem;
+        width: 95%;
+    }
+    .horizontal-group .control-group {
+        flex: 1 1 50%; /* Sizing for horizontal layout with wrapping */
+    }
+}
