@@ -181,8 +181,14 @@ function showNextImage() {
         clearTimeout(gapTimerId);
         gapTimerId = null;
     }
+
+    // --- FIX 1: AGGRESSIVE CLEANUP ---
+    // Remove all old content immediately for a clean slate during the opacity transition.
+    while (imageContainer.firstChild) {
+        imageContainer.removeChild(imageContainer.firstChild);
+    }
     
-    // 2. Pre-fetch Pexels images if needed (Logic retained)
+    // Pre-fetch Pexels images if needed (Logic retained)
     const hasUserPhotos = images.some(img => img.id !== null);
     if (!hasUserPhotos) {
         const remainingPexelsImages = images.slice(currentIndex).filter(img => img.id === null);
@@ -193,22 +199,21 @@ function showNextImage() {
 
     const imageUrl = images[currentIndex].url;
     
-    // 3. Create the image element
+    // 2. Create the image element
     const newImage = new Image();
-    newImage.src = imageUrl;
     newImage.alt = "Screensaver Image";
-    
-    // --- CORE FIX: Wait for the image to load completely ---
-    newImage.onload = () => {
-        // --- A. Remove Old Image (for clean transition) ---
-        const oldImage = imageContainer.querySelector('.active');
-        if (oldImage) {
-            oldImage.classList.remove('active');
-            // Remove the old image after its CSS transition (1000ms) completes
-            setTimeout(() => oldImage.remove(), 1000); 
-        }
 
-        // --- B. Apply Effects and Prepare New Image ---
+    // --- FIX 2: APPLY INLINE CSS CONSTRAINTS (Crucial for Data URLs) ---
+    // This forces the browser to respect the sizing before it even starts decoding the image data.
+    newImage.style.width = '100%';
+    newImage.style.height = '100%';
+    newImage.style.objectFit = 'cover';
+    
+    // 3. Wait for the image to load
+    newImage.onload = () => {
+        // This code runs ONLY AFTER the image (even the large Data URL) is fully decoded and ready.
+
+        // Apply special effects/animations after load
         if (isBlackAndWhite) {
             newImage.classList.add('black-and-white');
         }
@@ -219,20 +224,15 @@ function showNextImage() {
         } else if (effect < 0.66) {
             newImage.classList.add('zoom-out-animation');
         }
-
-        // --- C. Append and Activate (Trigger CSS) ---
-        // Append the image to the container
+        
+        // Append the new, fully loaded and constrained image, then apply 'active' to fade it in.
         imageContainer.appendChild(newImage); 
+        newImage.classList.add('active'); // Triggers the CSS fade-in
         
-        // Now that the image is in the DOM and fully loaded, apply the 'active' class 
-        // to start the fade-in, and the object-fit: cover rule will be correctly applied 
-        // before the image is displayed.
-        newImage.classList.add('active'); 
-
-        // --- D. Update Index and Start Timer ---
+        // Update index
         currentIndex = (currentIndex + 1) % images.length;
-        
-        // --- E. Timing Logic (Retained from original function) ---
+
+        // --- Start Timing Logic (Retained from original function) ---
         let photoDisplayTime;
         let gapTime;
 
@@ -257,30 +257,33 @@ function showNextImage() {
         if (isPaused) return;
 
         timerId = setTimeout(() => {
+            // Container fade out starts the transition gap
             imageContainer.style.opacity = 0;
             gapTimerId = setTimeout(() => {
                 imageContainer.style.opacity = 1;
                 gapTimerId = null;
-                if (!isPaused) showNextImage();
+                if (!isPaused) showNextImage(); // Calls next image once the gap is over
             }, gapTime);
             timerId = null;
         }, photoDisplayTime);
-    }; // --- END of newImage.onload ---
+    };
 
-    // --- Add Error Handling for User Images ---
+    // Error handling (Retained)
     newImage.onerror = () => {
         console.error("Error loading image at index:", currentIndex, "Removing from queue.");
-        // Remove the bad image from the queue and try the next one
         images.splice(currentIndex, 1);
         if (images.length > 0) {
             currentIndex %= images.length;
             showNextImage();
         } else {
-            // Display a message if no images are left
             imageContainer.innerHTML = '<p style="color:white;text-align:center;padding-top:50vh;">All images failed to load or were removed.</p>';
         }
     };
+    
+    // Set src last to initiate the load process
+    newImage.src = imageUrl; 
 }
+
 // --- Meditation Mode Logic ---
 function startMeditationMode() {
     isPaused = false;
