@@ -100,27 +100,47 @@ function openDatabase() {
 }
 
 // --- Revised IndexedDB Function ---
+// --- CORRECTED IndexedDB Function: Robust Error Handling ---
 async function addImagesToDB(files) {
-    const transaction = db.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
+    // 1. Perform all heavy processing, ensuring each promise resolves (even if it's null).
+    const safeProcessingPromises = Array.from(files).map(file => 
+        // We wrap the processImageFile call with a catch block.
+        // If processing fails, it resolves with null instead of rejecting the entire batch.
+        processImageFile(file).catch(e => {
+            console.error(`Warning: Failed to process file ${file.name}. Skipping it.`, e);
+            return null; // Return null on failure
+        })
+    );
+
+    // Wait for ALL files to be attempted.
+    const results = await Promise.all(safeProcessingPromises);
     
-    // Create an array of Promises for processing all files
-    const processingPromises = Array.from(files).map(file => processImageFile(file));
+    // Filter out any nulls (the failed uploads)
+    const processedBlobs = results.filter(blob => blob !== null); 
 
-    // Wait for all files to be processed (resized/compressed)
-    const processedBlobs = await Promise.all(processingPromises);
+    if (processedBlobs.length === 0) {
+        console.warn("No images were successfully processed and saved.");
+        return Promise.resolve(); // Nothing to save
+    }
 
-    // Add the smaller, compressed Blobs to the database
-    processedBlobs.forEach(blob => {
-        store.add({ blob: blob });
-    });
-
+    // 2. Start the IndexedDB transaction only with successful blobs.
     return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+
         transaction.oncomplete = () => {
-            console.log("Images processed and added to IndexedDB");
+            console.log(`Successfully added ${processedBlobs.length} image(s) to IndexedDB.`);
             resolve();
         };
-        transaction.onerror = (event) => reject(event.target.error);
+        transaction.onerror = (event) => {
+            console.error("Transaction error during image storage:", event.target.error);
+            reject(event.target.error);
+        };
+
+        // Queue the adds instantly.
+        processedBlobs.forEach(blob => {
+            store.add({ blob: blob });
+        });
     });
 }
 
