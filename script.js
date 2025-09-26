@@ -171,6 +171,8 @@ function startScreensaver() {
 
 function showNextImage() {
     if (isPaused) return;
+
+    // 1. Clear existing timers
     if (timerId) {
         clearTimeout(timerId);
         timerId = null;
@@ -179,13 +181,8 @@ function showNextImage() {
         clearTimeout(gapTimerId);
         gapTimerId = null;
     }
-
-    const oldImage = imageContainer.querySelector('.active');
-    if (oldImage) {
-        oldImage.classList.remove('active');
-        setTimeout(() => oldImage.remove(), 1000);
-    }
     
+    // 2. Pre-fetch Pexels images if needed (Logic retained)
     const hasUserPhotos = images.some(img => img.id !== null);
     if (!hasUserPhotos) {
         const remainingPexelsImages = images.slice(currentIndex).filter(img => img.id === null);
@@ -193,71 +190,97 @@ function showNextImage() {
             fetchAndCacheImages();
         }
     }
-    
+
     const imageUrl = images[currentIndex].url;
     
-    // Create the image element first
+    // 3. Create the image element
     const newImage = new Image();
     newImage.src = imageUrl;
     newImage.alt = "Screensaver Image";
     
-    // Apply special effects directly to the image
-    if (isBlackAndWhite) {
-        newImage.classList.add('black-and-white');
-    }
-    
-    const effect = Math.random();
-    if (effect < 0.33) {
-        newImage.classList.add('zoom-in-animation');
-    } else if (effect < 0.66) {
-        newImage.classList.add('zoom-out-animation');
-    }
+    // --- CORE FIX: Wait for the image to load completely ---
+    newImage.onload = () => {
+        // --- A. Remove Old Image (for clean transition) ---
+        const oldImage = imageContainer.querySelector('.active');
+        if (oldImage) {
+            oldImage.classList.remove('active');
+            // Remove the old image after its CSS transition (1000ms) completes
+            setTimeout(() => oldImage.remove(), 1000); 
+        }
 
-    let finalElement;
-    // The polaroid effect is now handled exclusively in the gallery, not the screensaver.
-    finalElement = newImage;
-    
-    // Add the active class to the final element being appended
-    finalElement.classList.add('active');
+        // --- B. Apply Effects and Prepare New Image ---
+        if (isBlackAndWhite) {
+            newImage.classList.add('black-and-white');
+        }
+        
+        const effect = Math.random();
+        if (effect < 0.33) {
+            newImage.classList.add('zoom-in-animation');
+        } else if (effect < 0.66) {
+            newImage.classList.add('zoom-out-animation');
+        }
 
-    imageContainer.appendChild(finalElement);
+        // --- C. Append and Activate (Trigger CSS) ---
+        // Append the image to the container
+        imageContainer.appendChild(newImage); 
+        
+        // Now that the image is in the DOM and fully loaded, apply the 'active' class 
+        // to start the fade-in, and the object-fit: cover rule will be correctly applied 
+        // before the image is displayed.
+        newImage.classList.add('active'); 
 
-    currentIndex = (currentIndex + 1) % images.length;
-    
-    let photoDisplayTime;
-    let gapTime;
+        // --- D. Update Index and Start Timer ---
+        currentIndex = (currentIndex + 1) % images.length;
+        
+        // --- E. Timing Logic (Retained from original function) ---
+        let photoDisplayTime;
+        let gapTime;
 
-    if (displayModeSelect.value === 'random') {
-        const minPhotoTime = 9000;
-        const maxPhotoTime = 18000;
-        photoDisplayTime = Math.floor(Math.random() * (maxPhotoTime - minPhotoTime + 1) + minPhotoTime);
-    } else {
-        const manualDisplayInput = document.getElementById('manual-display-time');
-        photoDisplayTime = parseInt(manualDisplayInput.value) * 1000;
-    }
+        if (displayModeSelect.value === 'random') {
+            const minPhotoTime = 9000;
+            const maxPhotoTime = 18000;
+            photoDisplayTime = Math.floor(Math.random() * (maxPhotoTime - minPhotoTime + 1) + minPhotoTime);
+        } else {
+            const manualDisplayInput = document.getElementById('manual-display-time');
+            photoDisplayTime = parseInt(manualDisplayInput.value) * 1000;
+        }
 
-    if (intervalModeSelect.value === 'random') {
-        const minGapTime = 12000;
-        const maxGapTime = 20000;
-        gapTime = Math.floor(Math.random() * (maxGapTime - minGapTime + 1) + minGapTime);
-    } else {
-        const manualIntervalInput = document.getElementById('manual-interval-time');
-        gapTime = parseInt(manualIntervalInput.value) * 1000;
-    }
+        if (intervalModeSelect.value === 'random') {
+            const minGapTime = 12000;
+            const maxGapTime = 20000;
+            gapTime = Math.floor(Math.random() * (maxGapTime - minGapTime + 1) + minGapTime);
+        } else {
+            const manualIntervalInput = document.getElementById('manual-interval-time');
+            gapTime = parseInt(manualIntervalInput.value) * 1000;
+        }
 
-    if (isPaused) return;
+        if (isPaused) return;
 
-    timerId = setTimeout(() => {
-        imageContainer.style.opacity = 0;
-        gapTimerId = setTimeout(() => {
-            imageContainer.style.opacity = 1;
-            gapTimerId = null;
-            if (!isPaused) showNextImage();
-        }, gapTime);
-        timerId = null;
-    }, photoDisplayTime);
+        timerId = setTimeout(() => {
+            imageContainer.style.opacity = 0;
+            gapTimerId = setTimeout(() => {
+                imageContainer.style.opacity = 1;
+                gapTimerId = null;
+                if (!isPaused) showNextImage();
+            }, gapTime);
+            timerId = null;
+        }, photoDisplayTime);
+    }; // --- END of newImage.onload ---
+
+    // --- Add Error Handling for User Images ---
+    newImage.onerror = () => {
+        console.error("Error loading image at index:", currentIndex, "Removing from queue.");
+        // Remove the bad image from the queue and try the next one
+        images.splice(currentIndex, 1);
+        if (images.length > 0) {
+            currentIndex %= images.length;
+            showNextImage();
+        } else {
+            // Display a message if no images are left
+            imageContainer.innerHTML = '<p style="color:white;text-align:center;padding-top:50vh;">All images failed to load or were removed.</p>';
+        }
+    };
 }
-
 // --- Meditation Mode Logic ---
 function startMeditationMode() {
     isPaused = false;
