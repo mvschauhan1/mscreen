@@ -39,7 +39,42 @@ let db;
 const DB_NAME = 'screensaver_db';
 const STORE_NAME = 'photos';
 let wakeLock = null;
+// --- New Image Processing Function ---
+function processImageFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const MAX_WIDTH = 1920; // Set a maximum width for screensaver (e.g., Full HD)
+                let width = img.width;
+                let height = img.height;
 
+                if (width > MAX_WIDTH) {
+                    height = height * (MAX_WIDTH / width);
+                    width = MAX_WIDTH;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                
+                // Draw the resized image to the canvas
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Convert the canvas content back to a Blob (JPEG for better compression)
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/jpeg', 0.85); // 0.85 is the quality setting
+            };
+            img.onerror = (e) => reject(new Error('Image load failed during processing.'));
+            img.src = event.target.result;
+        };
+        reader.onerror = (e) => reject(new Error('File read failed.'));
+        reader.readAsDataURL(file);
+    });
+}
 // --- IndexedDB Functions ---
 function openDatabase() {
     return new Promise((resolve, reject) => {
@@ -64,17 +99,25 @@ function openDatabase() {
     });
 }
 
-function addImagesToDB(files) {
+// --- Revised IndexedDB Function ---
+async function addImagesToDB(files) {
     const transaction = db.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
+    
+    // Create an array of Promises for processing all files
+    const processingPromises = Array.from(files).map(file => processImageFile(file));
 
-    files.forEach(file => {
-        store.add({ blob: file });
+    // Wait for all files to be processed (resized/compressed)
+    const processedBlobs = await Promise.all(processingPromises);
+
+    // Add the smaller, compressed Blobs to the database
+    processedBlobs.forEach(blob => {
+        store.add({ blob: blob });
     });
 
     return new Promise((resolve, reject) => {
         transaction.oncomplete = () => {
-            console.log("Images added to IndexedDB");
+            console.log("Images processed and added to IndexedDB");
             resolve();
         };
         transaction.onerror = (event) => reject(event.target.error);
@@ -182,8 +225,7 @@ function showNextImage() {
         gapTimerId = null;
     }
 
-    // --- FIX 1: AGGRESSIVE CLEANUP ---
-    // Remove all old content immediately for a clean slate during the opacity transition.
+    // --- AGGRESSIVE CLEANUP ---
     while (imageContainer.firstChild) {
         imageContainer.removeChild(imageContainer.firstChild);
     }
@@ -203,16 +245,13 @@ function showNextImage() {
     const newImage = new Image();
     newImage.alt = "Screensaver Image";
 
-    // --- FIX 2: APPLY INLINE CSS CONSTRAINTS (Crucial for Data URLs) ---
-    // This forces the browser to respect the sizing before it even starts decoding the image data.
+    // --- APPLY INLINE CSS CONSTRAINTS ---
     newImage.style.width = '100%';
     newImage.style.height = '100%';
     newImage.style.objectFit = 'cover';
     
     // 3. Wait for the image to load
     newImage.onload = () => {
-        // This code runs ONLY AFTER the image (even the large Data URL) is fully decoded and ready.
-
         // Apply special effects/animations after load
         if (isBlackAndWhite) {
             newImage.classList.add('black-and-white');
@@ -227,12 +266,12 @@ function showNextImage() {
         
         // Append the new, fully loaded and constrained image, then apply 'active' to fade it in.
         imageContainer.appendChild(newImage); 
-        newImage.classList.add('active'); // Triggers the CSS fade-in
+        newImage.classList.add('active'); 
         
         // Update index
         currentIndex = (currentIndex + 1) % images.length;
 
-        // --- Start Timing Logic (Retained from original function) ---
+        // --- Start Timing Logic (Retained) ---
         let photoDisplayTime;
         let gapTime;
 
@@ -257,12 +296,11 @@ function showNextImage() {
         if (isPaused) return;
 
         timerId = setTimeout(() => {
-            // Container fade out starts the transition gap
             imageContainer.style.opacity = 0;
             gapTimerId = setTimeout(() => {
                 imageContainer.style.opacity = 1;
                 gapTimerId = null;
-                if (!isPaused) showNextImage(); // Calls next image once the gap is over
+                if (!isPaused) showNextImage(); 
             }, gapTime);
             timerId = null;
         }, photoDisplayTime);
