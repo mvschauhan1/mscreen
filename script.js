@@ -264,7 +264,7 @@ function startMeditationMode() {
     imageContainer.style.display = 'none';
     meditationTextContainer.style.display = 'block';
 
-    const word = meditationWordInput.value || 'Breathe';
+    const word = meditationWordInput.value || 'ਵਾਹਿਗੁਰੂ';
     meditationTextContainer.textContent = word;
 
     const duration = parseInt(breathingDurationInput.value, 10);
